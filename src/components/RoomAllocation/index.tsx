@@ -23,10 +23,20 @@ const RoomAllocation = (props: RoomAllocationProps) => {
       if (name.includes(item.roomId)) {
         return {
           ...item,
-          adult: isAdult ? { ...item.adult, value: Number(value) } : item.adult,
+          adult: isAdult
+            ? {
+                ...item.adult,
+                value: Number(value),
+                max: 4 - item.child.value,
+              }
+            : { ...item.adult, max: 4 - Number(value) },
           child: !isAdult
-            ? { ...item.child, value: Number(value) }
-            : item.child,
+            ? {
+                ...item.child,
+                value: Number(value),
+                max: 4 - item.adult.value,
+              }
+            : { ...item.child, max: 4 - Number(value) },
         };
       }
       return item;
@@ -50,11 +60,12 @@ const RoomAllocation = (props: RoomAllocationProps) => {
     const data = new Array(room).fill(roomInit).map((el, i) => {
       return {
         roomId: `room${i + 1}`,
+        roomNum: 4,
         adult: {
           ...inputObj,
           name: `room${i + 1}_adult`,
           value: 1,
-          max: 10,
+          max: 4,
           min: 1,
         },
         child: {
@@ -91,7 +102,7 @@ const RoomAllocation = (props: RoomAllocationProps) => {
           <div>尚未分配人數 : {guestTotal}人</div>
         </div>
 
-        {roomDetail.map((el, i) => (
+        {roomDetail.map((el) => (
           <div key={el.roomId} className="room">
             <h2 className="title">房間 : 1 人</h2>
             <div className="flex between">
@@ -103,7 +114,7 @@ const RoomAllocation = (props: RoomAllocationProps) => {
                 {...el.adult}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                disabled={guestTotal === 0}
+                disabled={guestTotal <= 0}
               />
             </div>
             <div className="flex between">
@@ -114,7 +125,7 @@ const RoomAllocation = (props: RoomAllocationProps) => {
                 {...el.child}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                disabled={guestTotal === 0}
+                disabled={guestTotal <= 0}
               />
             </div>
           </div>

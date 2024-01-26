@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Style } from "./style";
 import classNames from "classnames";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -127,18 +133,21 @@ const CustomInputNumber = (props: CustomInputNumberProps) => {
         name,
         value: inputNum.current,
       });
-      interval.current = setTimeout(timer(type), 100);
+      interval.current = setTimeout(timer(type), 150);
     } else if (type === "minus" && inputNum.current > min) {
       inputNum.current = inputNum.current - step;
-      console.log(inputNum.current);
       setInputValue(inputNum.current);
       onChange({
         name,
         value: inputNum.current,
       });
-      interval.current = setTimeout(timer(type), 100);
+      interval.current = setTimeout(timer(type), 150);
     }
   };
+
+  useEffect(() => {
+    setInputValue(value);
+  }, [value]);
 
   useEffect(() => {
     if (mouseUp) {
@@ -146,6 +155,12 @@ const CustomInputNumber = (props: CustomInputNumberProps) => {
       clearInterval(interval.current);
     }
   }, [mouseUp]);
+
+  useEffect(() => {
+    if (disabled) {
+      clearInterval(interval.current);
+    }
+  }, [disabled]);
 
   const plusDisbbled = useMemo(
     () => inputValue !== "" && Number(inputValue) >= max,

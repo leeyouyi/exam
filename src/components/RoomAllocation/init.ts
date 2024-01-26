@@ -19,6 +19,7 @@ export interface inputInfo {
 }
 export interface roomObj {
   roomId: string;
+  roomNum: number;
   adult: inputInfo;
   child: inputInfo;
 }
@@ -34,6 +35,7 @@ export const inputObj = {
 
 export const roomInit = {
   roomId: "room",
+  roomNum: 4,
   adult: inputObj,
   child: inputObj,
 };
