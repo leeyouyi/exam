@@ -28,7 +28,7 @@ export const Style = styled.div`
     }
     .between {
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
     }
     .adult {
       p {

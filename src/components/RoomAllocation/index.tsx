@@ -1,49 +1,85 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Style } from "./style";
-import CustomInputNumber from "../CustomInputNumber";
-
-interface result {
-  adult: number;
-  child: number;
-}
-
-interface RoomAllocationProps {
-  guest: number;
-  room: number;
-  onChange: (e: result[]) => void;
-}
-
-const inputObj = {
-  name: "inputNumber",
-  value: 0,
-  min: 0,
-  max: 50,
-  step: 2,
-  disabled: false,
-};
+import CustomInputNumber, { targat } from "../CustomInputNumber";
+import {
+  RoomAllocationProps,
+  inputObj,
+  resultType,
+  roomInit,
+  roomObj,
+} from "./init";
 
 const RoomAllocation = (props: RoomAllocationProps) => {
   const { guest, room, onChange } = props;
-  const roomArray = new Array(room).fill(0).map((el, i) => i + 1);
-  const [result, setResult] = useState<result[]>([]);
+  const [result, setResult] = useState<resultType[]>([]);
+  const [roomDetail, setRoomDetail] = useState<roomObj[]>([]);
+  const [guestTotal, setGuestTotal] = useState(0);
 
   /**  input 改變  */
-  const handleChange = (e: React.FocusEvent<HTMLInputElement, Element>) => {
-    console.log(e);
-    // if (e.target.name === name) {
-    const val = e.target.value === "" ? "" : Number(e.target.value);
-    //   setValue(val);
-    // }
+  const handleChange = (target: targat) => {
+    const { name, value } = target;
+    const mapData = roomDetail.map((item) => {
+      const isAdult = name.includes("adult");
+      if (name.includes(item.roomId)) {
+        return {
+          ...item,
+          adult: isAdult ? { ...item.adult, value: Number(value) } : item.adult,
+          child: !isAdult
+            ? { ...item.child, value: Number(value) }
+            : item.child,
+        };
+      }
+      return item;
+    });
+    setRoomDetail(mapData);
+    const resultData = mapData.map((item) => {
+      return {
+        adult: item.adult.value,
+        child: item.child.value,
+      };
+    });
+    setResult(resultData);
+    onChange(resultData);
   };
   /**  input blur  */
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement, Element>) => {
-    // if (e.target.id === name) {
-    //   console.log("span", e);
-    // }
-    // if (e.target.name === name) {
-    console.log(e);
-    // }
+  const handleBlur = (target: targat) => {
+    console.log(target);
   };
+
+  useEffect(() => {
+    const data = new Array(room).fill(roomInit).map((el, i) => {
+      return {
+        roomId: `room${i + 1}`,
+        adult: {
+          ...inputObj,
+          name: `room${i + 1}_adult`,
+          value: 1,
+          max: 10,
+          min: 1,
+        },
+        child: {
+          ...inputObj,
+          name: `room${i + 1}_child`,
+          value: 0,
+          max: 4,
+          min: 0,
+        },
+      };
+    });
+    setRoomDetail(data);
+    setGuestTotal(guest - room);
+  }, [room]);
+
+  useEffect(() => {
+    if (result.length !== 0) {
+      const numData = result.map((item) => {
+        return item.adult + item.child;
+      });
+      const total = numData.reduce((a, b) => a + b);
+      setGuestTotal(guest - total);
+    }
+  }, [result]);
+
   return (
     <Style>
       <div className="warp">
@@ -52,11 +88,11 @@ const RoomAllocation = (props: RoomAllocationProps) => {
         </h1>
 
         <div className="tootip">
-          <div>尚未分配人數 : 7人</div>
+          <div>尚未分配人數 : {guestTotal}人</div>
         </div>
 
-        {roomArray.map((el) => (
-          <div key={el} className="room">
+        {roomDetail.map((el, i) => (
+          <div key={el.roomId} className="room">
             <h2 className="title">房間 : 1 人</h2>
             <div className="flex between">
               <div className="adult">
@@ -64,11 +100,10 @@ const RoomAllocation = (props: RoomAllocationProps) => {
                 <span>年齡20+</span>
               </div>
               <CustomInputNumber
-                // value={value}
-                {...inputObj}
-                name={inputObj.name + el}
+                {...el.adult}
                 onChange={handleChange}
                 onBlur={handleBlur}
+                disabled={guestTotal === 0}
               />
             </div>
             <div className="flex between">
@@ -76,11 +111,10 @@ const RoomAllocation = (props: RoomAllocationProps) => {
                 <p>小孩</p>
               </div>
               <CustomInputNumber
-                // value={value}
-                {...inputObj}
-                name={inputObj.name + el}
+                {...el.child}
                 onChange={handleChange}
                 onBlur={handleBlur}
+                disabled={guestTotal === 0}
               />
             </div>
           </div>

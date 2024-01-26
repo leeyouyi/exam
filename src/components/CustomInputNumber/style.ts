@@ -7,7 +7,6 @@ export const Style = styled.div`
   }
   .dashed {
     width: 182px;
-    /* border: 1px dashed #ccc; */
     gap: 8px;
     padding: 8px;
   }

@@ -1,10 +1,14 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Style } from "./style";
 import classNames from "classnames";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus } from "@fortawesome/free-solid-svg-icons/faplus";
 import { faMinus } from "@fortawesome/free-solid-svg-icons/faminus";
 
+export interface targat {
+  name: string;
+  value: string | number;
+}
 interface CustomInputNumberProps {
   min?: number;
   max?: number;
@@ -12,8 +16,8 @@ interface CustomInputNumberProps {
   name?: string;
   value?: string | number;
   disabled?: boolean;
-  onChange?: (event: React.FocusEvent<HTMLInputElement, Element>) => void;
-  onBlur?: (event: React.FocusEvent<HTMLInputElement, Element>) => void;
+  onChange?: (targat: targat) => void;
+  onBlur?: (targat: targat) => void;
 }
 
 const CustomInputNumber = (props: CustomInputNumberProps) => {
@@ -32,20 +36,35 @@ const CustomInputNumber = (props: CustomInputNumberProps) => {
   const [mouseUp, setMouseUp] = useState(false);
   const timeout = useRef(null);
   const interval = useRef(null);
-  const plusBtn = useRef(null);
-  const minusBtn = useRef(null);
 
-  // /**  input 改變  */
-  // const handleChange = (e: React.FocusEvent<HTMLInputElement, Element>) => {
-  //   console.log(e);
-  // };
-  // /**  input blur  */
-  // const handleBlur = (e: React.FocusEvent<HTMLInputElement, Element>) => {
-  //   console.log(e);
-  // };
+  /**  input 改變  */
+  const handleChange = (e: React.FocusEvent<HTMLInputElement, Element>) => {
+    const val = e.target.value === "" ? "" : Number(e.target.value);
+    if (val !== "" && val > max) {
+      setInputValue(max);
+      return false;
+    }
+    if (val !== "" && val < min) {
+      setInputValue(min);
+      return false;
+    }
+    setInputValue(val);
+    onChange({
+      name,
+      value: val,
+    });
+  };
+
+  /**  div blur  */
+  const handleBlur = () => {
+    onBlur({
+      name,
+      value: inputValue,
+    });
+  };
 
   /**  增加 */
-  const handlePlus = () => {
+  const handlePlus = (e: React.MouseEvent<HTMLLabelElement, MouseEvent>) => {
     if (typeof inputValue === "string") {
       return false;
     }
@@ -53,6 +72,10 @@ const CustomInputNumber = (props: CustomInputNumberProps) => {
       return false;
     }
     setInputValue(inputValue + step);
+    onChange({
+      name,
+      value: inputValue + step,
+    });
   };
   /**  長按增加down */
   const handlePlusMouseDown = () => {
@@ -72,6 +95,10 @@ const CustomInputNumber = (props: CustomInputNumberProps) => {
       return false;
     }
     setInputValue(inputValue - step);
+    onChange({
+      name,
+      value: inputValue - step,
+    });
   };
   /**  長按減少down  */
   const handleMinusMouseDown = () => {
@@ -89,14 +116,28 @@ const CustomInputNumber = (props: CustomInputNumberProps) => {
       return false;
     }
     inputNum.current = inputValue;
-    interval.current = setInterval(() => {
-      if (type === "plus" && inputNum.current < max) {
-        inputNum.current = inputNum.current + step;
-      } else if (type === "minus" && inputNum.current > min) {
-        inputNum.current = inputNum.current - step;
-      }
+    timer(type)();
+  };
+
+  const timer = (type: string) => () => {
+    if (type === "plus" && inputNum.current < max) {
+      inputNum.current = inputNum.current + step;
       setInputValue(inputNum.current);
-    }, 100);
+      onChange({
+        name,
+        value: inputNum.current,
+      });
+      interval.current = setTimeout(timer(type), 100);
+    } else if (type === "minus" && inputNum.current > min) {
+      inputNum.current = inputNum.current - step;
+      console.log(inputNum.current);
+      setInputValue(inputNum.current);
+      onChange({
+        name,
+        value: inputNum.current,
+      });
+      interval.current = setTimeout(timer(type), 100);
+    }
   };
 
   useEffect(() => {
@@ -106,27 +147,31 @@ const CustomInputNumber = (props: CustomInputNumberProps) => {
     }
   }, [mouseUp]);
 
-  useEffect(() => {
-    setInputValue(value);
-  }, [value]);
+  const plusDisbbled = useMemo(
+    () => inputValue !== "" && Number(inputValue) >= max,
+    [max, inputValue]
+  );
+  const minusDisbbled = useMemo(
+    () => inputValue !== "" && Number(inputValue) <= min,
+    [max, inputValue]
+  );
 
   return (
     <Style>
-      <div className="flex dashed">
+      <div className="flex dashed" onBlur={handleBlur}>
         <span
           id={name}
           suppressContentEditableWarning
           contentEditable={!disabled}
           className={
-            !disabled
+            !minusDisbbled
               ? "flex square minus"
               : classNames("flex square minus", "disabled")
           }
-          {...(!disabled && {
+          {...(!minusDisbbled && {
             onClick: handleMinus,
             onMouseDown: handleMinusMouseDown,
             onMouseUp: handleMinusMouseUp,
-            onBlur: onBlur,
           })}
         >
           <FontAwesomeIcon icon={faMinus} />
@@ -137,8 +182,7 @@ const CustomInputNumber = (props: CustomInputNumberProps) => {
           className="flex square input"
           name={name}
           value={inputValue}
-          onChange={onChange}
-          onBlur={onBlur}
+          onChange={handleChange}
           disabled={disabled}
         />
 
@@ -147,16 +191,16 @@ const CustomInputNumber = (props: CustomInputNumberProps) => {
           suppressContentEditableWarning
           contentEditable={!disabled}
           className={
-            !disabled
+            !disabled && !plusDisbbled
               ? "flex square plus"
               : classNames("flex square plus", "disabled")
           }
-          {...(!disabled && {
-            onClick: handlePlus,
-            onMouseDown: handlePlusMouseDown,
-            onMouseUp: handlePlusMouseUp,
-            onBlur: onBlur,
-          })}
+          {...(!disabled &&
+            !plusDisbbled && {
+              onClick: handlePlus,
+              onMouseDown: handlePlusMouseDown,
+              onMouseUp: handlePlusMouseUp,
+            })}
         >
           <FontAwesomeIcon icon={faPlus} />
         </span>
